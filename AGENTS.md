@@ -2,104 +2,146 @@
 
 ## Project Learning Journal
 
-This repo is being used as a hands-on learning project for software engineering fundamentals through a todo app.
+This repo is a hands-on learning project for software engineering fundamentals through a todo app.
 
-The assistant should continually maintain `LEARNINGS.md` as a concise but useful learning journal. The goal is not to document every action, but to preserve reusable concepts, tradeoffs, bugs, and design decisions the user encounters while building the project.
+The assistant must maintain `LEARNINGS.md` as a beginner-friendly study guide. Its purpose is to help the user return days or weeks later, understand what was learned, remember why decisions were made, and continue the project without rereading the entire chat.
 
-## Learning Update Instructions
+`LEARNINGS.md` is not a changelog and not an exhaustive action log.
 
-Update `LEARNINGS.md` after meaningful learning moments, including:
+## Quality Standard For LEARNINGS.md
 
-- A new concept is introduced.
-- A design choice is made.
-- A bug reveals an important principle.
-- A tool, framework, or library is added.
-- The project structure changes.
-- A deployment, environment, or dependency-management decision is made.
+Before adding or changing a note, ask:
 
-Do not update `LEARNINGS.md` for every tiny command or minor edit. Prefer high-signal notes the user can review later.
+- Would this help a beginner reconstruct the concept later?
+- Did the user actually encounter, ask about, debug, or decide this?
+- Is the idea transferable beyond this exact line of code?
+- Does it explain the mental model, not just the final answer?
+- Would a command, code snippet, or concrete example make it easier to remember?
 
-When updating the file:
+Prefer notes that explain:
 
-- Preserve useful existing notes.
-- Refine existing sections when a topic deepens instead of duplicating the topic.
-- Keep explanations beginner-friendly but technically accurate.
-- Capture the "why," not just the "what."
-- Mention tradeoffs when multiple reasonable options exist.
-- Use examples when they make syntax or behavior easier to remember.
-- Omit shallow future-topic filler until the project actually reaches that topic.
+- What the concept/tool is.
+- Why it was needed.
+- How it appears in this project.
+- What commands or syntax matter.
+- What files are read, written, generated, or committed.
+- What mistake, confusion, or tradeoff came up.
+- What the user should remember next time.
 
-## Learning Quality Bar
+For implementation walkthroughs, especially Dockerfiles, config files, CLI workflows, API routes, database setup, and deployment setup, preserve the line-by-line reasoning at a beginner level. Do not only record the final file. Explain each important line or command as an example of a broader concept.
 
-Before adding or changing a note in `LEARNINGS.md`, ask:
+Use this order when possible:
 
-- Did the user actually encounter this concept or ask about it?
-- Is this concept reusable later in the project?
-- Does it explain a mistake, design decision, tradeoff, or tool behavior?
-- Would a short example make the concept easier to remember?
+1. General concept.
+2. Why it matters.
+3. How it applies in this project.
+4. Concrete command or file line.
+5. Common confusion or gotcha.
+6. What to remember.
 
-Prioritize deeper notes for foundational concepts, including:
+Avoid notes that:
 
-- Python classes, objects, constructors, `self`, attributes, and methods.
-- Getters, setters, Python properties, backing fields, and encapsulation.
+- Merely record that a file, helper, function, or route was added.
+- Are narrow implementation trivia without a transferable lesson.
+- Are abstract one-line definitions with no beginner context.
+- Over-prioritize headings/structure over explanation.
+- Add future topics before the project actually reaches them.
+- Repeat an existing section without deepening it.
+
+## Command Documentation Standard
+
+When documenting a command in `LEARNINGS.md`, explain:
+
+- Where to run it from.
+- What the command does.
+- What files or state it reads.
+- What files or state it writes/changes.
+- Why important flags/options are used.
+- What result to expect.
+- Whether any generated files should be committed or ignored.
+
+Example command-note quality:
+
+```markdown
+`uv add "fastapi[standard]"`
+
+Run from `backend/`.
+
+This adds FastAPI to the backend project. `uv` updates `pyproject.toml`, resolves exact dependency versions into `uv.lock`, and installs packages into `.venv/`.
+
+The quotes protect the `[standard]` extra from shell interpretation.
+```
+
+## Tool And File Relationship Standard
+
+When documenting a tool, explain how it relates to project files and runtime behavior.
+
+Examples:
+
+- For `uv`, explain the relationship between `uv`, `pyproject.toml`, `uv.lock`, `.venv/`, and `uv run`.
+- For FastAPI, explain how `app`, route decorators, path parameters, request bodies, response models, and `/docs` relate.
+- For Pydantic, explain request models vs response models vs domain classes.
+- For Docker, explain Dockerfile, image, container, build context, port mapping, and ignored files.
+
+## Topics To Capture Deeply
+
+Prioritize deeper notes for concepts the user has actively encountered:
+
+- Python classes, objects, constructors, `self`, attributes, methods, and imports.
+- Getters, setters, Python properties, backing fields, validation, and encapsulation.
 - Decorators such as `@dataclass`, `@property`, `@app.get`, and `@app.post`.
 - Dataclasses and when they are useful or limiting.
 - Type hints, runtime validation, optional values, defaults, positional arguments, and keyword arguments.
-- Data structures such as lists and dictionaries, especially when they affect design.
-- FastAPI routes, route decorators, path/query parameters, request bodies, response models, and automatic docs.
+- Data structures such as lists and dictionaries when they affect design.
+- FastAPI routes, HTTP methods, path/query parameters, request bodies, response serialization, status codes, and automatic docs.
 - Pydantic models, validation, request vs response schemas, defaults, optional fields, and model-to-dict conversion.
-- Serialization and why internal Python objects are not the same as API responses.
-- HTTP methods, status codes, and translating Python exceptions into HTTP errors.
-- Dependency management with `uv`, `pyproject.toml`, `uv.lock`, and virtual environments.
+- Dependency management with `uv`, `pyproject.toml`, `uv.lock`, virtual environments, and `uv run`.
+- Docker concepts as they are implemented, not before.
+- Git/repo hygiene such as `.gitignore`, lockfiles, generated files, and what to commit.
 
-Avoid long sections about topics only briefly discussed or not implemented yet, such as Docker, Vercel, CI/CD, databases, or frontend architecture. Mention them only in a short deferred section until the project reaches them.
+## LEARNINGS.md Structure
 
-## LEARNINGS.md Style
-
-Use a readable topic-based structure:
+Use larger topic sections with detailed subsections:
 
 ```markdown
 # Learnings
 
 ## Project Snapshot
 
-Short summary of the current architecture and tools. Update only when the project shape changes meaningfully.
+Current architecture, tools, files, routes, and known limitations.
 
-## Larger Topic Section
+## Topic Area
 
 ### Specific Concept
 
-Explanation of the concept, with enough detail for later review.
+Explain the concept clearly enough for a beginner to review later.
 
-Example when useful:
-
-```python
-...
+Include examples, commands, and common mistakes when useful.
 ```
 
-Key lesson:
-```
+Good larger sections include:
 
-Prefer larger sections such as:
-
-- Python And OOP
-- Data Modeling And Design Decisions
+- How To Use This File
+- Project Snapshot
+- Python Fundamentals And OOP
+- Backend Domain Design
 - FastAPI And HTTP APIs
 - Pydantic And Validation
-- Dependency Management
-- Current Design Decisions
+- Dependency Management With uv
+- Docker And Containers
+- Project Organization And Git Hygiene
 - Deferred Topics
 
-Not every topic needs the same format. Some concepts deserve longer explanations with examples; others only need a short note.
+Prefer concept-based organization over strict chronology. The file should read like a practical study guide, not a transcript.
 
-Prefer concept-based notes over strict chronological notes. The file should be easy to review by topic, not just by date.
+## Maintenance Rules
 
-## Maintenance Guidance
+When the user asks for review, feedback, moves to a new concept, expresses confusion, or receives an explanation that meets the quality bar, proactively update `LEARNINGS.md` without waiting for a separate reminder.
 
-When the user asks for review, feedback, or moves to a new concept, consider whether `LEARNINGS.md` should be updated.
+If a topic already exists, improve the existing section rather than duplicating it.
 
-If the user points out a missing or shallow concept, review recent chat context and improve the relevant section, not just append a new note.
+If the user says the notes are too shallow, review the relevant section for mental model, commands, file relationships, examples, and common mistakes.
 
-Merge overlapping topics when possible so `LEARNINGS.md` stays readable as a study guide.
+If a topic has only been mentioned but not worked through, keep it in a short deferred section until it becomes active.
 
-Keep `LEARNINGS.md` concise enough to remain useful, but go deeper on concepts the user struggled with or explicitly asked to understand.
+Do not use subagents to edit `LEARNINGS.md` unless the user explicitly approves the proposed note changes first.

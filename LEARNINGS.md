@@ -1,27 +1,87 @@
 # Learnings
 
+## How To Use This File
+
+This file is a study guide for the todo app project. It is organized by concept, not by date. The goal is to help you return to the project later and remember:
+
+- what each technology or concept means;
+- why we used it;
+- how it appears in this project;
+- what commands matter;
+- what files are important;
+- what mistakes or tradeoffs came up.
+
+This file should not record every small code edit. It should preserve high-value concepts that are likely to matter again.
+
 ## Project Snapshot
 
-This project is currently a small FastAPI backend for a todo app. The backend lives in `backend/`, uses `uv` for Python dependency management, and stores tasks in memory using a `TodoList` object containing `Task` objects. The API currently supports listing, creating, fetching, and deleting tasks. There is no database, frontend, Docker setup, or production deployment yet.
+The project is currently a small FastAPI backend for a todo app.
 
-## Python And OOP
+Current repo shape:
+
+```text
+todo-app/
+  AGENTS.md
+  LEARNINGS.md
+  backend/
+    main.py
+    todo.py
+    pyproject.toml
+    uv.lock
+```
+
+Current backend:
+
+- `backend/todo.py` contains plain Python domain classes: `Task` and `TodoList`.
+- `backend/main.py` contains the FastAPI app, Pydantic request/response models, and API routes.
+- Dependencies are managed with `uv`.
+- Data is stored in memory in one global `TodoList`, so data resets when the app restarts.
+
+Current API capabilities:
+
+```text
+GET    /tasks
+POST   /tasks
+GET    /tasks/{uid}
+DELETE /tasks/{uid}
+PATCH  /tasks/{uid}/toggle
+```
+
+Known limitations:
+
+- No database yet.
+- No frontend yet.
+- No Docker image completed yet.
+- No production deployment yet.
+- All users would currently share the same in-memory todo list.
+
+## Python Fundamentals And OOP
 
 ### Classes And Objects
 
-A class is a blueprint for a type of thing. An object is one actual instance of that class.
+A class is a blueprint. An object is one actual thing made from that blueprint.
 
-In this project, `Task` represents one todo item. `TodoList` represents a collection of tasks and the behavior for managing that collection.
+Example:
 
-Key idea:
+```python
+class Task:
+    ...
 
-- `Task` should know how one task behaves.
-- `TodoList` should know how a group of tasks is managed.
+task = Task("Buy milk")
+```
 
-This is the basic object-oriented programming idea of putting related data and behavior together.
+`Task` is the class. `task` is one object.
+
+In this project:
+
+- `Task` represents one todo item.
+- `TodoList` represents a collection of tasks and operations on that collection.
+
+Why this matters: object-oriented programming is about grouping related data and behavior together. A `Task` should know about one task's fields and behavior. A `TodoList` should know how to manage multiple tasks.
 
 ### Constructors And `self`
 
-`__init__` is the constructor method Python calls when creating a new object.
+`__init__` is the constructor method. Python calls it when creating a new object.
 
 ```python
 class Task:
@@ -29,16 +89,29 @@ class Task:
         self.title = title
 ```
 
-`self` means "this specific object." If you create two tasks, each task has its own `self.title`.
+`self` means "this specific object."
 
-Key lesson: constructor parameters are temporary inputs, while `self.some_name` stores data on the object.
+If you create two tasks:
+
+```python
+task1 = Task("Buy milk")
+task2 = Task("Call dentist")
+```
+
+each object has its own `self.title`.
+
+Key idea:
+
+- `title` is a temporary input passed into the constructor.
+- `self.title` stores data on the object.
 
 ### Attributes And Methods
 
-An attribute is data stored on an object.
+An attribute is data on an object.
 
 ```python
 task.title
+task.description
 task.is_complete
 ```
 
@@ -49,7 +122,276 @@ task.mark_complete()
 task.toggle_complete()
 ```
 
-Good class design usually asks: "What data does this object own, and what behavior belongs with that data?"
+Good design question: does this behavior belong to one task or to the collection of tasks?
+
+Examples:
+
+- `Task.toggle_complete()` belongs to one task.
+- `TodoList.get_task(uid)` belongs to the collection because it finds a task by ID.
+
+### Getters, Setters, And Python Properties
+
+Some languages use explicit getter and setter methods:
+
+```python
+task.get_title()
+task.set_title("Buy milk")
+```
+
+Python usually prefers direct-looking attribute access:
+
+```python
+task.title
+task.title = "Buy milk"
+```
+
+But direct-looking access can still run logic through `@property`.
+
+Example:
+
+```python
+class Task:
+    @property
+    def title(self):
+        return self._title
+
+    @title.setter
+    def title(self, value):
+        if not isinstance(value, str):
+            raise TypeError("Title should be a string")
+        if not value.strip():
+            raise ValueError("Title cannot be empty")
+        self._title = value
+```
+
+What happens:
+
+- Reading `task.title` calls the getter.
+- Assigning `task.title = "Buy milk"` calls the setter.
+- The actual stored value is `task._title`.
+
+Why this matters: properties let the class expose a clean public interface while still enforcing rules.
+
+### Backing Fields And Internal Attributes
+
+`_title`, `_description`, and `_is_complete` are backing fields. They store values internally.
+
+The leading underscore is a Python convention:
+
+```text
+This is internal. Do not use it directly from outside the class.
+```
+
+It is not hard privacy. Python will still let you access `_title`, but the convention matters.
+
+Use:
+
+```python
+task.title
+```
+
+Avoid:
+
+```python
+task._title
+```
+
+Why this matters: if outside code depends on internal fields, it becomes harder to change how the class works later.
+
+### Setter Recursion Bug
+
+Inside a setter, assigning to the public property calls the setter again.
+
+Problem:
+
+```python
+@is_complete.setter
+def is_complete(self, value):
+    self.is_complete = value
+```
+
+This calls the same setter repeatedly.
+
+Correct pattern:
+
+```python
+@is_complete.setter
+def is_complete(self, value):
+    self._is_complete = value
+```
+
+What to remember: setters should usually validate input, then assign to the internal backing field.
+
+### Encapsulation
+
+Encapsulation means hiding internal details and exposing controlled ways to interact with an object.
+
+Without encapsulation:
+
+```python
+task._title = ""
+todo_list.tasks["bad"] = "not a task"
+```
+
+With encapsulation:
+
+```python
+task.title = "Buy milk"
+todo_list.create_task("Buy milk")
+todo_list.remove_task(uid)
+```
+
+Why this matters: encapsulation protects rules. For example:
+
+- a task title should not be empty;
+- `is_complete` should be a boolean;
+- the todo list should only contain `Task` objects;
+- outside code should not directly mutate the internal task dictionary.
+
+### Dataclasses
+
+`@dataclass` is a decorator that can generate common class boilerplate.
+
+Example:
+
+```python
+from dataclasses import dataclass
+
+@dataclass
+class Task:
+    title: str
+    description: str = ""
+    is_complete: bool = False
+```
+
+This gives you an initializer automatically:
+
+```python
+Task(title, description="", is_complete=False)
+```
+
+Why dataclasses are useful:
+
+- less repetitive constructor code;
+- readable debug output;
+- good for simple data containers.
+
+Why we moved away from it:
+
+- we wanted to learn manual class construction;
+- we needed validation through properties/setters;
+- `Task` became more than just passive data.
+
+What to remember: dataclasses are good when a class mostly stores data. Manual classes are useful when you want more control over validation and behavior.
+
+### Decorators
+
+A decorator is syntax that modifies, wraps, or registers a function or class.
+
+General shape:
+
+```python
+@some_decorator
+def some_function():
+    ...
+```
+
+Decorators are not comments. They affect behavior.
+
+Examples encountered:
+
+- `@dataclass`: modifies a class by generating methods.
+- `@property`: makes a method look like an attribute.
+- `@title.setter`: registers the setter for a property.
+- `@app.get("/tasks")`: registers a FastAPI route for `GET /tasks`.
+- `@app.post("/tasks")`: registers a FastAPI route for `POST /tasks`.
+
+What to remember: decorators often connect your code to a framework or language feature.
+
+### Type Hints Vs Runtime Validation
+
+Type hints describe expected types:
+
+```python
+def __init__(self, title: str):
+    ...
+```
+
+But Python does not automatically enforce them at runtime.
+
+This can still be called unless your code rejects it:
+
+```python
+Task(123)
+```
+
+Runtime validation is explicit:
+
+```python
+if not isinstance(value, str):
+    raise TypeError("Title should be a string")
+```
+
+What to remember:
+
+- Type hints help humans, editors, and type checkers.
+- Validation protects the running program.
+
+### Optional Types Vs Default Values
+
+`Optional[str]` means a value may be either `str` or `None`.
+
+```python
+description: Optional[str]
+```
+
+That does not automatically mean the argument may be omitted. A default value makes an argument optional to pass.
+
+Examples:
+
+```python
+description: Optional[str] = None
+description: str = ""
+```
+
+Meaning:
+
+- `Optional[str] = None`: the value can be a string or `None`; if omitted, it defaults to `None`.
+- `str = ""`: the value should be a string; if omitted, it defaults to an empty string.
+
+This came up in both Python classes and Pydantic models.
+
+What to remember: optional type and optional argument are related but not the same thing.
+
+### Positional Vs Keyword Arguments
+
+Python binds positional arguments left to right.
+
+```python
+def __init__(self, title, description="", is_complete=False):
+    ...
+```
+
+This:
+
+```python
+Task("Buy milk", "Get whole milk")
+```
+
+means:
+
+```python
+title = "Buy milk"
+description = "Get whole milk"
+```
+
+Keyword arguments target parameter names:
+
+```python
+Task("Buy milk", is_complete=True)
+```
+
+What to remember: once a function has multiple optional parameters, keyword arguments are clearer and safer.
 
 ### `__repr__`, `__str__`, And Object Display
 
@@ -68,249 +410,17 @@ When printing a list of objects, Python uses each object's `__repr__`.
 print([task])
 ```
 
-This is why task output can look clean in the terminal even if the object's actual internal fields are named `_title`, `_description`, and `_is_complete`.
-
-`!r` inside an f-string means "use the repr version of this value." This is useful for debugging because strings appear with quotes.
+`!r` inside an f-string means "use the repr version of this value."
 
 ```python
 title = "Buy milk"
-print(f"{title}")   # Buy milk
-print(f"{title!r}") # 'Buy milk'
+print(f"{title}")    # Buy milk
+print(f"{title!r}")  # 'Buy milk'
 ```
 
-`__str__` is usually for a more user-friendly display. `__repr__` is usually for a more developer/debug-oriented display.
+`__str__` is usually for user-friendly display. `__repr__` is usually for developer/debug display.
 
-Key lesson: `__repr__` helps with Python display and debugging. It does not define JSON output or API response shape.
-
-### Getters, Setters, And Python Properties
-
-Some languages commonly use explicit getter/setter methods:
-
-```python
-task.get_title()
-task.set_title("Buy milk")
-```
-
-Python usually prefers direct-looking attribute access:
-
-```python
-task.title
-task.title = "Buy milk"
-```
-
-But Python can still run getter/setter logic behind the scenes using `@property`.
-
-```python
-class Task:
-    @property
-    def title(self):
-        return self._title
-
-    @title.setter
-    def title(self, value):
-        if not value.strip():
-            raise ValueError("Title cannot be empty")
-        self._title = value
-```
-
-This gives a clean public interface while still protecting rules.
-
-Key lesson: Python properties let code use `task.title` while the class still controls validation.
-
-### Backing Fields And Internal Attributes
-
-An attribute like `_title` is often called a backing field. It stores the actual value used by the public property `title`.
-
-```python
-self._title = value
-```
-
-The leading underscore means "internal implementation detail." It is a convention, not true privacy.
-
-Key lesson: outside code should use `task.title`, not `task._title`, because `_title` is how the class happens to store the value internally.
-
-### Setter Recursion Bug
-
-Inside a setter, assigning to the public property calls the setter again.
-
-Problem:
-
-```python
-@is_complete.setter
-def is_complete(self, value):
-    self.is_complete = value
-```
-
-This calls `is_complete` setter again and again.
-
-Correct pattern:
-
-```python
-@is_complete.setter
-def is_complete(self, value):
-    self._is_complete = value
-```
-
-Key lesson: inside a setter, assign to the internal backing field.
-
-### Encapsulation
-
-Encapsulation means hiding internal details and exposing controlled ways to interact with an object.
-
-Without encapsulation, outside code can put objects into invalid states:
-
-```python
-task._title = ""
-todo_list.tasks["bad"] = "not a task"
-```
-
-With encapsulation, outside code uses controlled methods:
-
-```python
-task.title = "Buy milk"
-todo_list.create_task("Buy milk")
-todo_list.remove_task(uid)
-```
-
-Key lesson: encapsulation is not about hiding things for its own sake. It protects rules and keeps responsibilities clear.
-
-### Dataclasses
-
-`@dataclass` is a decorator that can automatically generate common class boilerplate such as an initializer and readable representation.
-
-Example:
-
-```python
-from dataclasses import dataclass
-
-@dataclass
-class Task:
-    title: str
-    description: str = ""
-    is_complete: bool = False
-```
-
-This automatically gives the class an `__init__` similar to:
-
-```python
-Task(title, description="", is_complete=False)
-```
-
-Why it is useful:
-
-- Less repetitive code.
-- Good for simple data containers.
-- Automatically gives helpful display/debug behavior.
-
-Why we moved away from it for now:
-
-- We wanted to practice manual constructors.
-- We added validation through property setters.
-- The class started becoming more than a passive data container.
-
-Key lesson: dataclasses are useful when a class mostly stores data. Manual classes are useful when you want to deeply control initialization, validation, and behavior.
-
-### Decorators
-
-A decorator is syntax that wraps, modifies, or registers a function or class.
-
-General shape:
-
-```python
-@some_decorator
-def some_function():
-    ...
-```
-
-Conceptually, the decorator changes how the function/class behaves or how another system sees it.
-
-Examples encountered:
-
-- `@dataclass`: modifies a class by generating common methods.
-- `@property`: makes a method accessible like an attribute.
-- `@title.setter`: registers the setter for the `title` property.
-- `@app.get("/tasks")`: registers a function as a FastAPI route.
-- `@app.post("/tasks")`: registers a function as a POST endpoint.
-
-Key lesson: decorators are not comments. They actively change or register behavior.
-
-### Type Hints Vs Runtime Validation
-
-Type hints describe expected types:
-
-```python
-def __init__(self, title: str):
-    ...
-```
-
-But Python does not automatically enforce them at runtime.
-
-This can still be called unless validation rejects it:
-
-```python
-Task(123)
-```
-
-Runtime validation is explicit code:
-
-```python
-if not isinstance(value, str):
-    raise TypeError("Title should be a string")
-```
-
-Key lesson: type hints help humans and tools; validation protects runtime behavior.
-
-### Optional Types Vs Default Values
-
-`Optional[str]` means the value may be either `str` or `None`.
-
-```python
-description: Optional[str]
-```
-
-This does not automatically mean the argument can be omitted. A default value makes it optional to pass.
-
-```python
-description: Optional[str] = None
-description: str = ""
-```
-
-These mean different things:
-
-- `Optional[str] = None`: value may be missing or explicitly `None`.
-- `str = ""`: value should be a string, and empty string means no description.
-
-Key lesson: "optional type" and "optional argument" are related but not the same.
-
-### Positional Vs Keyword Arguments
-
-Python binds positional arguments left to right.
-
-```python
-def __init__(self, title, description="", is_complete=False):
-    ...
-```
-
-This call:
-
-```python
-Task("Buy milk", "Get whole milk")
-```
-
-means:
-
-```python
-title = "Buy milk"
-description = "Get whole milk"
-```
-
-Keyword arguments target names directly:
-
-```python
-Task("Buy milk", is_complete=True)
-```
-
-Key lesson: once a function has multiple optional parameters, keyword arguments are clearer and less error-prone.
+Important distinction: `__repr__` is not JSON serialization. It made task output look clean in the terminal, but FastAPI still exposed internal fields when raw `Task` objects were returned.
 
 ### Python Modules And Imports
 
@@ -327,11 +437,11 @@ This import:
 from todo import TodoList
 ```
 
-means "from the `todo.py` module, import `TodoList`."
+means: from the `todo.py` module, import `TodoList`.
 
-Where Python is run from matters. Running FastAPI from inside `backend/` lets Python find `todo.py` next to `main.py`.
+Where you run Python from matters. Running FastAPI from inside `backend/` lets Python find `todo.py` next to `main.py`.
 
-Key lesson: imports depend on project structure and Python's module search path.
+What to remember: imports depend on project structure and Python's module search path.
 
 ### `if __name__ == "__main__"`
 
@@ -342,47 +452,55 @@ if __name__ == "__main__":
     main()
 ```
 
-It does not run when the file is imported by another file.
+It does not run when another file imports the module.
 
-Why it matters:
+Why this matters:
 
-- It is useful for quick manual testing.
-- It keeps demo/playground code from running when another module imports the file.
-- It lets `todo.py` be both a reusable module and a directly runnable script.
+- useful for quick manual testing;
+- keeps playground/demo code from running during imports;
+- lets `todo.py` be both importable and directly runnable.
 
-Key lesson: code under `if __name__ == "__main__"` is a safe place for temporary manual experiments.
-
-## Data Modeling And Design Decisions
+## Backend Domain Design
 
 ### `Task` And `TodoList` Responsibilities
 
-The current model has two main classes:
+Current design:
 
-- `Task`: stores task data and validates fields.
-- `TodoList`: stores multiple tasks and provides operations like create, get, list, remove, and toggle.
+- `Task`: stores one task's data and validates fields.
+- `TodoList`: stores multiple tasks and provides collection operations.
 
-Key lesson: a single object should not do everything. `Task` should not manage the whole collection, and `TodoList` should not contain all field validation details for a task.
+Examples:
+
+- `Task.toggle_complete()` changes one task.
+- `TodoList.get_task(uid)` finds one task from the collection.
+- `TodoList.remove_task(uid)` removes one task from the collection.
+
+Why this matters: classes should have focused responsibilities. If every class knows everything, the code becomes hard to change.
 
 ### ID Ownership
 
-One recurring design question was: who creates task IDs?
+We discussed several possible owners for task IDs:
 
-Options:
+- caller provides IDs;
+- `Task` creates its own ID;
+- `TodoList` assigns IDs;
+- a future database assigns IDs.
 
-- Caller creates the ID.
-- `Task` creates its own ID.
-- `TodoList` assigns the ID.
-- A future database assigns the ID.
+Current decision: `Task` creates its own UUID, and `TodoList` stores tasks by UUID.
 
-Current decision: `Task` currently creates its own UUID, and `TodoList` indexes tasks by that UUID.
+Why UUIDs:
+
+- globally unique;
+- easy to generate without a database;
+- useful for API URLs.
 
 Tradeoff:
 
-- UUIDs are realistic and globally unique.
-- Integer IDs are easier to read and common in SQL databases.
-- Later, a database may take over ID generation.
+- UUIDs are harder to read than integers;
+- SQL databases often use integer primary keys;
+- future database integration may change ID ownership.
 
-Key lesson: only one layer should own ID generation at a time, otherwise duplicate IDs and unclear responsibility become likely.
+What to remember: only one layer should own ID generation at a time.
 
 ### Lists Vs Dictionaries
 
@@ -392,9 +510,9 @@ A list is simple:
 tasks = [task1, task2]
 ```
 
-But finding one task by ID requires scanning the list.
+But finding a task by ID requires scanning the list.
 
-A dictionary is better for lookup:
+A dictionary is better for direct lookup:
 
 ```python
 tasks = {
@@ -402,51 +520,29 @@ tasks = {
 }
 ```
 
-Current decision: `TodoList` stores tasks in a dictionary keyed by UUID.
+Current design: `TodoList` stores tasks in a dictionary keyed by UUID.
 
-Key lesson: data structure choice affects how easy operations like lookup, delete, and update become.
+Why this matters:
+
+- `get_task(uid)` can look up directly by ID;
+- `remove_task(uid)` can delete directly by ID;
+- API routes naturally work with IDs.
 
 ### Returning Internal Storage
 
-Returning the raw internal dictionary would expose the implementation:
+Returning the raw internal dictionary exposes implementation details:
 
 ```python
 return self.tasks
 ```
 
-Returning a list hides how tasks are stored:
+Returning a list hides the storage choice:
 
 ```python
 return list(self.tasks.values())
 ```
 
-Key lesson: outside code should ask for tasks, not depend on whether they are stored in a dictionary, list, or database.
-
-### Toggle Vs Explicit Set
-
-`toggle_complete()` flips the current state.
-
-```python
-False -> True
-True -> False
-```
-
-This matches a checkbox UI, where the user can check and uncheck.
-
-But APIs often prefer explicit updates:
-
-```json
-{
-  "is_complete": true
-}
-```
-
-Tradeoff:
-
-- Toggle is simple and maps to the current method.
-- Explicit set is safer because repeated requests produce the same final state.
-
-Key lesson: UI behavior and API design are related, but not always identical.
+Why this matters: outside code should not depend on whether tasks are stored in a dictionary, list, or database.
 
 ## FastAPI And HTTP APIs
 
@@ -454,62 +550,52 @@ Key lesson: UI behavior and API design are related, but not always identical.
 
 An API is a controlled way for another program to interact with your app.
 
-The client might be:
+The client could be:
 
-- A React frontend.
-- A browser.
-- Postman.
-- `curl`.
-- Another backend service.
-- Automated tests.
+- browser;
+- React frontend;
+- Swagger docs;
+- `curl`;
+- Postman;
+- automated tests;
+- another backend service.
 
-Key lesson: an API is not only for a UI. It is a contract for any HTTP client.
+The server is the FastAPI app.
 
-### Client-Server Model
-
-A client asks for something. A server receives the request, does work, and sends back a response.
-
-Restaurant analogy:
+Analogy: restaurant ordering.
 
 - Client: customer.
-- Request: order placed with the waiter.
-- Server: kitchen/restaurant system.
-- Route: the counter or menu path where the order goes.
-- Request body: details like "no onions."
-- Response: the prepared food or an explanation that the item is unavailable.
+- Request: the order.
+- Server: restaurant/kitchen.
+- Route: where the order is sent.
+- Request body: special instructions like "no onions."
+- Response: the food or an explanation that the item is unavailable.
 
-In this project:
-
-- Client: browser, Swagger docs, frontend, `curl`, Postman, or tests.
-- Server: FastAPI app.
-- Request: `GET /tasks`, `POST /tasks`, `DELETE /tasks/{uid}`.
-- Response: JSON plus an HTTP status code.
-
-Key lesson: the client does not directly call Python methods like `todolist.create_task()`. It sends HTTP requests. FastAPI translates those requests into Python function calls.
+Important idea: the client does not directly call Python methods like `todolist.create_task()`. The client sends HTTP requests, and FastAPI maps those requests to Python functions.
 
 ### Request-Response Lifecycle
 
-A typical request flow:
+For `POST /tasks`, the flow is:
 
-1. Client sends `POST /tasks` with JSON.
-2. FastAPI matches the request to the `POST /tasks` route.
+1. Client sends HTTP request with JSON.
+2. FastAPI matches method and path to the route function.
 3. Pydantic validates the request body.
-4. The route function calls domain logic such as `todolist.create_task(...)`.
-5. The domain object returns a `Task`.
-6. The route serializes the task into JSON-friendly data.
-7. FastAPI sends response JSON and an HTTP status code.
+4. Route function calls Python domain logic.
+5. Domain logic returns a `Task`.
+6. Route converts the `Task` into JSON-friendly data.
+7. FastAPI sends JSON plus an HTTP status code.
 
-Key lesson: an API request passes through several layers. Each layer has a different responsibility.
+Why this matters: an API request passes through layers. Each layer has a job.
 
 ### FastAPI App And Route Decorators
 
-FastAPI starts with an app object:
+The app object:
 
 ```python
 app = FastAPI()
 ```
 
-Route decorators connect HTTP requests to Python functions:
+Route decorators register functions with FastAPI:
 
 ```python
 @app.get("/tasks")
@@ -517,15 +603,17 @@ def list_tasks():
     ...
 ```
 
-This means: when the server receives `GET /tasks`, run `list_tasks`.
+Meaning:
 
-Key lesson: FastAPI uses the HTTP method and path together to choose the route function.
+```text
+When a GET request comes to /tasks, run list_tasks().
+```
 
-### Endpoints And Routes
+The decorator connects HTTP to Python.
 
-A route is the API path and method combination.
+### Routes, Endpoints, And HTTP Methods
 
-Examples:
+A route is the method/path combination:
 
 ```text
 GET /tasks
@@ -534,28 +622,22 @@ GET /tasks/{uid}
 DELETE /tasks/{uid}
 ```
 
-An endpoint is the function that handles that route.
+An endpoint is the Python function that handles the route.
 
-Key lesson: the same path can support different actions if the HTTP method is different.
+HTTP methods describe intent:
 
-### HTTP Methods
-
-HTTP methods describe what kind of operation the client wants.
-
-- `GET`: read data.
-- `POST`: create something.
-- `PATCH`: partially update something.
+- `GET`: read data;
+- `POST`: create something;
+- `PATCH`: partially update something;
 - `DELETE`: remove something.
 
-These methods do not magically enforce the behavior. The Python code still controls what happens. But they create a shared convention between client and server.
+They do not enforce behavior automatically. Your Python code still decides what happens. But clients and developers expect these conventions.
 
-Key lesson: `GET /tasks` and `POST /tasks` can share the same path but mean different things.
+### Visiting A URL Sends GET
 
-### Visiting A URL Usually Sends GET
+Typing a URL into a browser usually sends a `GET` request.
 
-Typing a URL into a browser address bar usually sends a `GET` request.
-
-This is why data-changing actions should not be implemented as GET routes.
+That is why data-changing operations should not be implemented as `GET`.
 
 Bad idea:
 
@@ -569,43 +651,43 @@ Better:
 DELETE /tasks/{uid}
 ```
 
-Key lesson: refreshing or visiting a URL should not accidentally create, update, or delete data.
+What to remember: refreshing a page or visiting a link should not accidentally delete or create data.
 
 ### Path Parameters Vs Query Parameters
 
-A path parameter identifies a specific resource:
+Path parameters identify a specific resource:
 
 ```text
 /tasks/{uid}
 /users/{user_id}
 ```
 
-A query parameter filters, searches, sorts, or modifies a request:
+Query parameters usually filter, search, sort, or modify the request:
 
 ```text
 /tasks?completed=false
 /users?search=alex
 ```
 
-For deleting one task:
+For deleting one task, this is clearer:
 
 ```text
 DELETE /tasks/{uid}
 ```
 
-is clearer than:
+than:
 
 ```text
 DELETE /tasks?uid=...
 ```
 
-Key lesson: if the value identifies the thing, put it in the path. If it filters or modifies a request, put it in the query string.
+Rule: if the value identifies the thing, put it in the path. If it filters or modifies a request, put it in the query string.
 
 ### Request Bodies
 
-A request body is data sent by the client, usually JSON.
+A request body is structured data the client sends, usually JSON.
 
-Example for creating a task:
+Example:
 
 ```json
 {
@@ -614,21 +696,21 @@ Example for creating a task:
 }
 ```
 
-`GET` requests usually do not have bodies. `POST` and `PATCH` commonly do.
+`GET` usually does not have a body. `POST` and `PATCH` commonly do.
 
-Key lesson: request bodies are how clients send structured data to the API.
+In this project, `POST /tasks` uses a request body to create a task.
 
 ### Serialization
 
-Serialization means converting internal Python objects into a format that can be sent over the network, usually JSON.
+Serialization means converting Python objects into a format that can be sent over the network.
 
-Internal object:
+Internal Python object:
 
 ```python
 Task(...)
 ```
 
-JSON-friendly response:
+JSON-friendly API response:
 
 ```json
 {
@@ -639,11 +721,11 @@ JSON-friendly response:
 }
 ```
 
-Key lesson: API responses should not return raw domain objects directly.
+Why this matters: clients do not understand custom Python objects. They understand JSON.
 
 ### FastAPI Response Conversion
 
-FastAPI route functions can return normal Python data such as dictionaries, lists, strings, numbers, booleans, and `None`. FastAPI converts these into HTTP responses, usually JSON.
+FastAPI can automatically convert normal Python data into HTTP responses.
 
 Example:
 
@@ -653,7 +735,7 @@ def example():
     return {"message": "hello"}
 ```
 
-The HTTP response body becomes JSON:
+Response JSON:
 
 ```json
 {
@@ -661,70 +743,67 @@ The HTTP response body becomes JSON:
 }
 ```
 
-FastAPI can also handle many common Python types, such as `uuid.UUID`, by converting them into JSON-compatible values.
+FastAPI handles common values like dictionaries, lists, strings, numbers, booleans, `None`, and many standard types like `uuid.UUID`.
 
-However, custom domain objects like `Task` are not ideal API responses. FastAPI may inspect their internal attributes, which can expose implementation details like `_title`, `_description`, or `_uid`.
+But raw custom objects are risky. When raw `Task` objects were returned, FastAPI exposed internal fields like `_title` and `_uid`.
 
-Better route behavior:
-
-```python
-return {
-    "uid": str(task.uid),
-    "title": task.title,
-    "description": task.description,
-    "is_complete": task.is_complete,
-}
-```
-
-Key lesson: FastAPI can convert many values automatically, but route functions should still return intentional API-shaped data instead of raw domain objects.
+What to remember: return intentional API-shaped data, not raw domain objects.
 
 ### `__repr__` Is Not An API Response
 
-`__repr__` controls how an object appears when printed in Python.
+`__repr__` affects how objects print in Python.
 
-FastAPI does not use `__repr__` as the API response format. When raw objects were returned, FastAPI exposed internal fields like `_title` and `_uid`.
+FastAPI does not use `__repr__` as the API response shape.
 
-Key lesson: printing/debug display and JSON serialization are different concerns.
+This explained why:
+
+- terminal output looked clean;
+- API output exposed underscore-backed fields when raw objects were returned.
 
 ### FastAPI Automatic Docs
 
-FastAPI generates interactive API documentation from route definitions, type hints, Pydantic models, and response models.
+FastAPI generates interactive docs from route decorators, type hints, Pydantic models, and response models.
 
-Common docs URL while developing locally:
+Local docs URL:
 
 ```text
 http://127.0.0.1:8000/docs
 ```
 
-Why it matters:
+Why this is useful:
 
-- You can inspect available routes.
-- You can send test requests from the browser.
-- You can see request and response shapes.
-- It helps catch mismatches between what the API expects and what the client sends.
-
-Key lesson: FastAPI documentation is generated from the code, so clearer route types and Pydantic models produce clearer API docs.
+- see available routes;
+- test requests in the browser;
+- inspect request body shapes;
+- inspect response models;
+- catch mismatch between expected and actual data.
 
 ### HTTP Status Codes
 
-Status codes tell the client what happened.
+HTTP status codes tell the client what happened.
 
-- `200`: success.
-- `404`: requested resource was not found.
-- `422`: request validation failed, often from FastAPI/Pydantic.
-- `500`: unhandled backend error.
+Important ones encountered:
 
-Key lesson: status codes are part of the API contract. Clients should not have to parse Python exception text to understand what happened.
+- `200`: request succeeded.
+- `404`: resource not found.
+- `422`: request validation failed.
+- `500`: unhandled server error.
+
+Examples:
+
+- invalid UUID path like `/tasks/not-a-uuid` returns `422` because FastAPI cannot parse the parameter as `uuid.UUID`;
+- valid UUID format but missing task returns `404`;
+- unhandled Python exceptions can become `500`.
 
 ### Python Exceptions Vs HTTP Errors
 
-The domain layer may raise Python exceptions:
+`TodoList` is plain Python code. It can raise Python exceptions:
 
 ```python
 raise KeyError("Task does not exist")
 ```
 
-The FastAPI layer should translate relevant exceptions into HTTP errors:
+The FastAPI route translates that into an HTTP response:
 
 ```python
 from fastapi import HTTPException
@@ -735,56 +814,32 @@ except KeyError:
     raise HTTPException(status_code=404, detail="Task not found")
 ```
 
-Key lesson: keep HTTP-specific errors in the API layer, not inside plain Python domain classes like `TodoList`.
-
-### 404 Vs 422 In FastAPI
-
-Two different error cases can happen with a route like:
-
-```text
-GET /tasks/{uid}
-```
-
-If the client sends something that is not a valid UUID:
-
-```text
-GET /tasks/not-a-uuid
-```
-
-FastAPI rejects it before the route logic runs because the path parameter cannot be parsed as `uuid.UUID`. That produces a validation error, typically `422`.
-
-If the client sends a valid UUID format, but no task exists with that ID:
-
-```text
-GET /tasks/00000000-0000-0000-0000-000000000000
-```
-
-the route runs, `TodoList` raises `KeyError`, and the route should translate that into:
-
-```python
-raise HTTPException(status_code=404, detail="Task not found")
-```
-
-Key lesson: `422` means the request shape/type was invalid. `404` means the request was understandable, but the requested resource does not exist.
+Why this matters: `TodoList` should not know about HTTP. The API layer knows how to communicate with HTTP clients.
 
 ## Pydantic And Validation
 
-### What Pydantic Does In FastAPI
+### What Pydantic Does
 
-Pydantic defines the expected shape of data and validates it.
+Pydantic validates and structures data.
 
-In FastAPI, Pydantic is commonly used for:
+FastAPI uses Pydantic for:
 
-- Request bodies.
-- Response models.
-- Type validation.
-- Automatic API documentation.
+- request bodies;
+- response models;
+- automatic docs;
+- type conversion and validation.
 
-Key lesson: Pydantic models are API data shapes, not necessarily the same thing as domain classes.
+Important distinction:
+
+- `Task` is a domain class with behavior.
+- `InputTaskData` is an API request shape.
+- `OutputTaskData` is an API response shape.
+
+These are related, but they are not the same thing.
 
 ### Request Models
 
-A request model describes what the client is allowed or required to send.
+A request model describes what the client sends.
 
 Example:
 
@@ -794,15 +849,13 @@ class InputTaskData(BaseModel):
     description: str = ""
 ```
 
-This says:
+Meaning:
 
-- `title` is required.
-- `description` is optional to pass because it has a default.
-- both fields should be strings.
+- `title` is required;
+- `description` can be omitted because it has a default;
+- both should be strings.
 
-FastAPI uses this model to parse and validate the request body before the route logic runs.
-
-Key lesson: request models protect the boundary between outside clients and your application code.
+FastAPI uses this to validate incoming JSON before route logic runs.
 
 ### Response Models
 
@@ -818,18 +871,16 @@ class OutputTaskData(BaseModel):
     is_complete: bool
 ```
 
-The response can include fields the client did not send, such as:
+Why output can include more fields than input:
 
-- `uid`: generated by the server.
-- `is_complete`: defaulted by the server.
+- client does not send `uid`; server creates it;
+- client does not send `is_complete`; server defaults it.
 
-Key lesson: input and output shapes are often different.
+Input shape and output shape often differ.
 
-### `response_model` As An API Contract
+### `response_model`
 
-In FastAPI, `response_model` tells FastAPI and API clients what shape a route should return.
-
-Example:
+FastAPI routes can declare a response model:
 
 ```python
 @app.get("/tasks", response_model=list[OutputTaskData])
@@ -837,26 +888,18 @@ def list_tasks():
     ...
 ```
 
-Why it matters:
+What it does:
 
-- It documents the response shape in `/docs`.
-- It helps FastAPI validate/filter returned data.
-- It communicates what clients can rely on.
+- documents the response shape in `/docs`;
+- validates returned data;
+- filters out fields not in the response model;
+- helps serialize output.
 
-Key lesson: `response_model` is not just decoration. It is part of the API contract.
-
-### What `response_model` Does And Does Not Do
-
-`response_model` can validate, document, filter, and serialize returned data.
-
-It can filter out extra fields that are not part of the response model.
-
-Example:
+Example of filtering:
 
 ```python
 class PublicTask(BaseModel):
     title: str
-
 
 @app.get("/task", response_model=PublicTask)
 def get_task():
@@ -866,7 +909,7 @@ def get_task():
     }
 ```
 
-The API response only includes:
+Response:
 
 ```json
 {
@@ -874,68 +917,47 @@ The API response only includes:
 }
 ```
 
-This is useful, but it should not become an excuse to return messy internal objects everywhere. It is still better to intentionally convert domain objects into clear API response shapes.
+What to remember: `response_model` is a contract and safety net. It does not replace careful API boundary design.
 
-What `response_model` does:
+### Optional Fields And Defaults In Pydantic
 
-- Documents the expected response in `/docs`.
-- Validates that returned data matches the expected shape.
-- Filters out fields not included in the model.
-- Helps serialize returned data into JSON-compatible output.
-
-What `response_model` does not do:
-
-- It does not automatically make domain object design clean.
-- It does not replace careful API boundary design.
-- It does not mean clients should see internal object attributes.
-
-Key lesson: `response_model` is a contract and safety net. Explicit serialization keeps the boundary between domain objects and API responses clearer.
-
-### Optional Fields In Pydantic
-
-This means the field type allows `None`, but the field may still be required depending on the Pydantic version and defaults:
+These mean different things:
 
 ```python
 description: Optional[str]
-```
-
-This clearly makes the field omittable:
-
-```python
 description: Optional[str] = None
-```
-
-This says the field is always a string if present, with a default:
-
-```python
 description: str = ""
 ```
 
-Key lesson: use defaults intentionally. Type optionality and field requiredness are different concepts.
+Meaning:
+
+- `Optional[str]`: type allows `None`, but field may still be required depending on defaults/version behavior.
+- `Optional[str] = None`: field can be omitted and defaults to `None`.
+- `str = ""`: field can be omitted and defaults to an empty string.
+
+What to remember: default values determine whether the client can omit a field.
 
 ### Model To Dictionary Conversion
 
-Pydantic models can be converted into dictionaries.
+Pydantic model objects can be converted into dictionaries.
 
-Older style:
+Older/common style:
 
 ```python
 input_task.dict()
 ```
 
-Newer style:
+Newer Pydantic v2 style:
 
 ```python
 input_task.model_dump()
 ```
 
-This is useful when passing validated data into regular Python functions.
-
-Key lesson: Pydantic models are objects, but sometimes normal dictionaries are easier for integration.
+This is useful when passing validated data into normal Python functions.
 
 ### Dictionary Unpacking With `**`
 
-`**` unpacks dictionary keys into keyword arguments.
+`**` unpacks a dictionary into keyword arguments.
 
 ```python
 data = {
@@ -946,86 +968,416 @@ data = {
 todolist.create_task(**data)
 ```
 
-This is equivalent to:
+Equivalent:
 
 ```python
 todolist.create_task(title="Buy milk", description="Whole milk")
 ```
 
-Key lesson: dictionary keys must match the target function's parameter names.
+Requirement: dictionary keys must match the function parameter names.
 
-## Dependency Management
+## Dependency Management With uv
 
-### Why Use A Virtual Environment
+### The Problem uv Solves
 
-A virtual environment isolates packages for one project.
+Python projects usually depend on external packages. This backend needs packages like FastAPI and Pydantic.
 
-Without it, packages installed for one project can interfere with another project.
+Bad habit:
 
-Current decision: the backend has a `.venv/` managed by `uv`.
+```bash
+pip install fastapi
+```
 
-Key lesson: the virtual environment is local machine state and should not be committed.
+without knowing where it installs. It might install globally or into whichever virtual environment happens to be active.
 
-### `uv`
+Better approach:
 
-`uv` manages Python dependencies and project environments.
+```text
+The backend declares its dependencies, locks exact versions, and runs commands inside an isolated environment.
+```
+
+`uv` helps manage that workflow.
+
+### How uv, pyproject.toml, uv.lock, And .venv Fit Together
+
+`uv` is the tool.
+
+`pyproject.toml` is the dependency/config declaration.
+
+`uv.lock` is the exact resolved dependency lockfile.
+
+`.venv/` is the installed local environment.
+
+Relationship:
+
+```text
+uv reads pyproject.toml
+uv resolves exact package versions
+uv writes uv.lock
+uv installs packages into .venv/
+uv run executes commands using that environment
+```
+
+Another way to remember it:
+
+```text
+pyproject.toml says what the project needs
+uv.lock says exactly what versions were chosen
+.venv contains the installed packages
+uv is the command that manages all of this
+```
+
+### Why The Files Are Inside backend/
+
+The repo will eventually have both backend and frontend code.
+
+Python dependencies belong to the backend:
+
+```text
+backend/
+  pyproject.toml
+  uv.lock
+  .venv/
+```
+
+Later, frontend dependencies will likely belong in:
+
+```text
+frontend/
+  package.json
+  package-lock.json or similar
+```
+
+Why this matters: backend Python dependencies and frontend JavaScript dependencies should be managed separately.
+
+### pyproject.toml
+
+`pyproject.toml` is a standard Python project configuration file.
+
+In this project:
+
+```text
+backend/pyproject.toml
+```
+
+Example:
+
+```toml
+[project]
+name = "backend"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi[standard]>=0.136.1",
+    "pydantic>=2.13.3",
+]
+```
+
+Meaning:
+
+- `[project]`: Python project metadata section.
+- `name`: project name.
+- `version`: project version.
+- `requires-python`: compatible Python version range.
+- `dependencies`: packages the project needs.
+
+How it is tied to `uv`: when you run `uv add`, `uv` updates the `dependencies` list in `pyproject.toml`.
+
+### What TOML Is
+
+TOML is a configuration file format.
+
+It is designed to be readable:
+
+```toml
+name = "backend"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi[standard]>=0.136.1",
+]
+```
+
+Common TOML ideas:
+
+- `key = value` sets a value;
+- `[section]` creates a table/section;
+- lists use square brackets.
+
+`pyproject.toml` uses TOML syntax because Python tooling standardized around this file format for project configuration.
+
+### uv.lock
+
+`uv.lock` records the exact dependency solution.
+
+If `pyproject.toml` says:
+
+```text
+fastapi >= 0.136.1
+```
+
+there may be many valid FastAPI versions and many sub-dependency versions. `uv.lock` records the exact versions selected.
+
+Why commit it:
+
+- another machine can install the same versions;
+- Docker builds can reproduce the same environment;
+- deployment can use the same dependency set;
+- fewer surprises from dependency updates.
+
+What to remember: `pyproject.toml` is the human-facing dependency declaration. `uv.lock` is the exact machine-resolved result.
+
+### .venv
+
+`.venv/` is the actual virtual environment folder.
+
+It contains installed packages and Python environment files.
+
+Do not commit it because:
+
+- it is machine-specific;
+- it can be recreated from `pyproject.toml` and `uv.lock`;
+- it can be large;
+- it may differ across operating systems and CPU architectures.
+
+### Commands We Used
+
+Run backend Python commands from:
+
+```bash
+cd backend
+```
+
+Why: `uv` looks for `pyproject.toml` in the current directory or parent directories. Since the backend Python project is in `backend/`, run backend commands there.
+
+Initialize the backend project:
+
+```bash
+uv init --bare
+```
+
+What it does:
+
+- creates a minimal `pyproject.toml`;
+- does not create extra sample source files because of `--bare`.
+
+Why `--bare`: we already had backend files and did not want generated starter files.
+
+Add FastAPI:
+
+```bash
+uv add "fastapi[standard]"
+```
+
+What it does:
+
+- updates `pyproject.toml`;
+- resolves exact dependency versions;
+- updates `uv.lock`;
+- installs/syncs packages into `.venv/`.
+
+Why quotes: some shells can treat square brackets specially, so quoting `"fastapi[standard]"` is safer.
+
+Run FastAPI in development:
+
+```bash
+uv run fastapi dev main.py
+```
+
+What it does:
+
+- uses the backend project's environment;
+- runs the `fastapi` command installed in `.venv`;
+- starts the development server for `main.py`.
+
+Why `uv run`: you usually do not need to manually activate the virtual environment with `source .venv/bin/activate`.
+
+### What To Commit
+
+Commit:
+
+```text
+backend/pyproject.toml
+backend/uv.lock
+```
+
+Do not commit:
+
+```text
+backend/.venv/
+__pycache__/
+*.pyc
+```
+
+What to remember:
+
+```text
+uv = tool
+pyproject.toml = declared dependencies/config
+uv.lock = exact resolved dependency versions
+.venv = installed local environment
+uv run = run a command inside the managed environment
+```
+
+## Docker And Containers
+
+Docker packages an app's runtime so it can run consistently outside the local machine setup. It does not replace knowing how the app runs; it makes that runtime explicit.
+
+### Core Concepts And Commands
+
+- Image: blueprint containing runtime, dependencies, app files, and startup command.
+- Container: running or stopped instance of an image.
+- Docker CLI: `docker` command you type.
+- Docker engine: background service that builds images and runs containers.
 
 Useful commands:
 
 ```bash
-uv init --bare
-uv add "fastapi[standard]"
-uv run fastapi dev main.py
+docker images          # local images
+docker ps              # running containers
+docker ps -a           # all containers, including stopped ones
+docker stop <id/name>  # stop a running container
 ```
 
-Why it matters:
+Built images live in Docker's local image store, not as normal project files. Use `docker images` to inspect them.
 
-- dependencies are recorded in the project.
-- commands run in the project environment.
-- setup is easier to reproduce later.
+### Backend Dockerfile
 
-### `pyproject.toml` And `uv.lock`
+Current backend Dockerfile:
 
-`pyproject.toml` records project metadata and direct dependencies.
+```dockerfile
+FROM python:3.11-slim
+WORKDIR /app
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --no-dev
+COPY . .
+EXPOSE 8000
+CMD ["uv", "run", "fastapi", "run", "main.py", "--host", "0.0.0.0", "--port", "8000"]
+```
 
-`uv.lock` records exact resolved dependency versions.
+Key lines:
 
-Current decision:
+- `FROM python:3.11-slim`: start from a Python 3.11 image. `slim` is smaller than the full image but may need extra OS packages for some dependencies later.
+- `WORKDIR /app`: set `/app` as the working directory inside the image.
+- `COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/`: copy the `uv` binaries from the official `uv` image into this image.
+- `COPY pyproject.toml uv.lock ./`: copy dependency metadata before app code so Docker can cache dependency installation.
+- `RUN uv sync --frozen --no-dev`: install dependencies from `uv.lock` without changing the lockfile and without dev-only dependencies.
+- `COPY . .`: copy backend source files into `/app`.
+- `EXPOSE 8000`: document that the containerized app listens on port `8000`; it does not publish the port by itself.
+- `CMD [...]`: default command when the container starts.
 
-- Commit `backend/pyproject.toml`.
-- Commit `backend/uv.lock`.
-- Do not commit `backend/.venv/`.
+### Build Context And .dockerignore
 
-Key lesson: commit dependency definitions and lockfiles, not installed package folders.
+In:
 
-### How To Approach A New Library
+```bash
+docker build -t todo-backend .
+```
 
-A practical learning loop for a new library:
+`.` is the build context: the directory Docker can copy files from. Build from `backend/` because the Dockerfile, `pyproject.toml`, `uv.lock`, `main.py`, and `todo.py` are there.
 
-1. Identify why the library is needed.
-2. Install it in the project environment.
-3. Import the smallest needed piece.
-4. Build the smallest working example.
-5. Verify it runs.
-6. Add one feature at a time.
+`.dockerignore` keeps machine-local/generated files out of the build context:
 
-Example with FastAPI:
+```text
+.venv/
+__pycache__/
+*.py[cod]
+```
 
-- Need: expose Python logic over HTTP.
-- Install: `uv add "fastapi[standard]"`.
-- Import: `from fastapi import FastAPI`.
-- Smallest app: one `GET /` route.
-- Verify: open `/docs`.
+This matters because the local `.venv` is machine-specific and can be large; the image should install its own dependencies with `uv sync`.
 
-Key lesson: do not start with the whole documentation surface. First prove the smallest useful path works.
+### Ports, EXPOSE, And Port Mapping
 
-## Project Organization
+A port is a numbered communication door. In `http://127.0.0.1:8001/docs`, `127.0.0.1` is your machine and `8001` is the host port.
+
+Containers have their own network space, so Docker maps host ports to container ports:
+
+```bash
+docker run -p 8001:8000 todo-backend
+```
+
+Format:
+
+```text
+-p HOST_PORT:CONTAINER_PORT
+```
+
+Meaning:
+
+```text
+host port 8001 -> container port 8000
+```
+
+`EXPOSE 8000` documents the intended container port. `docker run -p ...` performs the actual mapping.
+
+If host port `8000` is already used, this error can appear:
+
+```text
+Bind for 0.0.0.0:8000 failed: port is already allocated
+```
+
+Fix: use a free host port, such as `8001`, or stop the process/container using `8000`.
+
+Useful checks:
+
+```bash
+docker ps
+lsof -i :8000
+```
+
+### CMD Exec Form Vs Shell Form
+
+Exec form:
+
+```dockerfile
+CMD ["uv", "run", "fastapi", "run", "main.py", "--host", "0.0.0.0", "--port", "8000"]
+```
+
+Shell form:
+
+```dockerfile
+CMD uv run fastapi run main.py --host 0.0.0.0 --port 8000
+```
+
+Exec form starts the program directly and passes each list item as one argument. Shell form runs through `/bin/sh -c`, which is useful only when shell features like `&&`, pipes, or variable expansion are needed.
+
+Use exec form for normal app startup because signal handling and argument passing are cleaner.
+
+`--host 0.0.0.0` matters in containers: `127.0.0.1` would mean "inside the container only," while `0.0.0.0` listens on interfaces Docker can forward to.
+
+### Build And Run Flow
+
+From `backend/`:
+
+```bash
+docker build -t todo-backend .
+docker images todo-backend
+docker run -p 8001:8000 todo-backend
+```
+
+`-t todo-backend` tags the image. Without an explicit tag, Docker uses `latest`, so `todo-backend` means `todo-backend:latest`.
+
+Verify:
+
+```text
+http://127.0.0.1:8001/docs
+http://127.0.0.1:8001/tasks
+```
+
+Foreground vs detached:
+
+```bash
+docker run -p 8001:8000 todo-backend      # foreground, logs in terminal, Ctrl+C stops
+docker run -d -p 8001:8000 todo-backend   # detached/background
+```
+
+What to remember: image = blueprint; container = instance; `docker build` creates image; `docker run` creates/runs container; `-p` connects host networking to container networking.
+
+## Project Organization And Git Hygiene
 
 ### Why Folder Structure Evolves
 
-Small projects can start with a few files. Larger projects split files by responsibility.
-
-Early structure:
+Small projects can start with a few files:
 
 ```text
 backend/
@@ -1033,7 +1385,7 @@ backend/
   todo.py
 ```
 
-Possible later structure:
+Larger projects split by responsibility:
 
 ```text
 backend/
@@ -1047,77 +1399,80 @@ backend/
   tests/
 ```
 
-The goal is not to create folders for appearance. The goal is to reduce confusion when files become too large or responsibilities mix.
-
-Key lesson: split code when there is real pressure, such as repeated schemas, many routes, database code, or tests.
+The goal is not to create folders for appearance. The goal is to reduce confusion when responsibilities start mixing.
 
 ### Common Backend Folders
 
-Common folder responsibilities:
+Common responsibilities:
 
-- `domain/`: business concepts like `Task` and `TodoList`.
-- `schemas/`: Pydantic request/response models.
-- `api/` or `routes/`: FastAPI route functions.
-- `repositories/`: data access logic.
-- `db/`: database connection/session/table setup.
+- `domain/`: business concepts like `Task` and `TodoList`;
+- `schemas/`: Pydantic request/response models;
+- `api/` or `routes/`: FastAPI route functions;
+- `repositories/`: data access logic;
+- `db/`: database connection/session/table setup;
 - `tests/`: automated tests.
 
-Key lesson: folder names should communicate responsibility.
+Current decision: keep the backend simple until there is real pressure to split files.
 
-### Generated Files And `.gitignore`
+### Generated Files And .gitignore
 
-Some files are source code and should be committed. Others are generated by tools and should be ignored.
+Some files are source files and should be committed. Others are generated locally and should be ignored.
 
-Usually commit:
+Commit:
 
-- `.py` source files.
-- `pyproject.toml`.
-- `uv.lock`.
+```text
+.py source files
+pyproject.toml
+uv.lock
+Dockerfile when created
+.dockerignore when created
+```
 
-Usually ignore:
+Ignore:
 
-- `.venv/`.
-- `__pycache__/`.
-- `.pyc` files.
+```text
+.venv/
+__pycache__/
+*.pyc
+```
 
-Key lesson: commit files needed to reproduce the project, not machine-local generated output.
+Why this matters: commit files needed to reproduce the project, not machine-local output.
 
-## Current Design Decisions
+## Future Study Guide Structure
 
-### Keep The Backend Simple For Now
+As the notes grow, `LEARNINGS.md` may become too large to review comfortably.
 
-The project currently keeps `main.py` and `todo.py` simple rather than splitting into many folders.
+A future split could be:
 
-This is intentional because the project is still small.
+```text
+study-guide/
+  README.md
+  python-oop.md
+  fastapi-http.md
+  pydantic.md
+  dependency-management-uv.md
+  docker.md
+  project-organization.md
+```
 
-Expected future pressure:
+Then `LEARNINGS.md` can become an index that links to topic-specific files.
 
-- multiple routes may motivate route modules.
-- repeated schemas may motivate a schemas file.
-- database persistence may motivate repository/database modules.
+Reason to split:
 
-Key lesson: split files when the code gives a reason, not just to imitate a large app.
+- easier review by topic;
+- less scrolling;
+- more room for detailed examples;
+- fewer unrelated concepts in one file.
 
-### Single Global TodoList
-
-The backend currently uses one global in-memory `TodoList`.
-
-This means:
-
-- data resets when the server restarts.
-- all users would share the same list.
-- it is fine for learning FastAPI basics.
-
-Key lesson: in-memory state is useful for learning but not real persistence.
+Do not split just for structure. Split when the file becomes hard to use as a study guide.
 
 ## Deferred Topics
 
-These topics have been discussed but not implemented deeply yet. They should be expanded when the project actually reaches them.
+These topics have been discussed or planned but not implemented deeply yet. Expand them only when the project reaches them.
 
-- Docker.
-- Backend deployment.
-- Vercel frontend deployment.
 - SQL Server persistence.
 - React frontend.
+- Frontend deployment with Vercel.
+- Backend deployment target selection.
 - Unit tests and API tests.
 - CI/CD.
