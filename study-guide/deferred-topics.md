@@ -5,6 +5,5 @@ These topics have been discussed or planned but not implemented deeply yet. Expa
 - SQL Server persistence.
 - React frontend.
 - Frontend deployment with Vercel.
-- Backend deployment target selection.
 - Unit tests and API tests.
 - CI/CD.

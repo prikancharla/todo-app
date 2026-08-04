@@ -41,6 +41,7 @@ todo-app/
     dependency-management-with-uv.md
     networking-clients-servers-and-ports.md
     docker-and-containers.md
+    deployment-on-render.md
     project-organization-and-git-hygiene.md
     git-basics.md
     deferred-topics.md
@@ -53,6 +54,7 @@ Current backend:
 - Dependencies are managed with `uv`.
 - `backend/Dockerfile` defines how to package the FastAPI backend into a Docker image.
 - `backend/.dockerignore` keeps generated local files out of the Docker build context.
+- The backend has been deployed on Render and verified through API routes.
 - Data is stored in memory in one global `TodoList`, so data resets when the app restarts.
 
 Current API capabilities:
@@ -69,8 +71,8 @@ Known limitations:
 
 - No database yet.
 - No frontend yet.
-- Docker packaging exists through `backend/Dockerfile` and `backend/.dockerignore`, but local build/run verification is still the next checkpoint before deployment.
-- The backend has not been deployed to a hosting service yet.
+- Docker packaging exists through `backend/Dockerfile` and `backend/.dockerignore`.
+- Backend deployment on Render works for the current in-memory API.
 - All users would currently share the same in-memory todo list.
 
 ## Study Guide Topics
@@ -82,6 +84,7 @@ Known limitations:
 - [Dependency Management With uv](study-guide/dependency-management-with-uv.md)
 - [Networking, Clients, Servers, And Ports](study-guide/networking-clients-servers-and-ports.md)
 - [Docker And Containers](study-guide/docker-and-containers.md)
+- [Deployment On Render](study-guide/deployment-on-render.md)
 - [Project Organization And Git Hygiene](study-guide/project-organization-and-git-hygiene.md)
 - [Git Basics Used In This Project](study-guide/git-basics.md)
 - [Deferred Topics](study-guide/deferred-topics.md)
