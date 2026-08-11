@@ -51,6 +51,7 @@ pyproject.toml
 uv.lock
 Dockerfile when created
 .dockerignore when created
+.env.example when created
 ```
 
 Ignore:
@@ -59,6 +60,13 @@ Ignore:
 .venv/
 __pycache__/
 *.pyc
+.env and .env.* files
+test, coverage, lint, and type-checking caches
+Python build artifacts
 ```
 
-Why this matters: commit files needed to reproduce the project, not machine-local output.
+Why this matters: commit files needed to reproduce the project, not machine-local output. A lockfile such as `uv.lock` is not generated clutter: it records the dependency versions needed for a repeatable install, so it belongs in Git.
+
+`.gitignore` is a project-wide agreement about generated and secret-bearing files. Keep it focused on files this project creates or is likely to create. Personal editor preferences are usually better kept in each developer's global Git ignore file, rather than ignoring an entire editor folder that could later contain useful shared settings.
+
+Ignoring a pattern only affects files that are not already tracked. If a secret was committed before adding it to `.gitignore`, remove it from Git tracking and rotate the secret; the ignore rule alone does not make the old commit safe.
