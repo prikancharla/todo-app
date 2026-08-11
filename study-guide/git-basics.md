@@ -155,6 +155,26 @@ Why branches matter:
 
 What to remember: commits belong to the branch you are currently on.
 
+## Cherry-Picking One Commit
+
+`git cherry-pick` applies one existing commit to the branch you are currently on. Use it when you want one change from another branch, rather than merging all of that branch's work.
+
+```bash
+git cherry-pick <commit-sha>
+```
+
+Run it from the repository root. Git reads the selected commit from its local history, applies its change to the current branch, and creates a new commit with a different ID.
+
+If a conflict occurs, resolve it, stage the fixed files, then continue:
+
+```bash
+git cherry-pick --continue
+```
+
+To cancel the operation, use `git cherry-pick --abort`.
+
+What to remember: a merge combines a branch's history; a cherry-pick selects one commit.
+
 ## Fetch Vs Pull
 
 Remote repositories, such as GitHub, can have commits your local repo does not know about yet.
@@ -244,4 +264,3 @@ Why this matters:
 If a file is already tracked, adding it to `.gitignore` does not automatically untrack it. `.gitignore` mainly prevents new untracked files from being added.
 
 What to remember: commit source/config/lock files; ignore generated machine-local output.
-

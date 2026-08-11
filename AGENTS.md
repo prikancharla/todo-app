@@ -45,6 +45,8 @@ It is not a changelog, transcript, or exhaustive action log.
 
 Update the study guide when the user asks for review or feedback, moves into a new concept, expresses confusion, debugs an issue, makes a meaningful design/tooling decision, or receives an explanation that would be useful to revisit later.
 
+Make that update during the same task without waiting for a reminder. Keep it concise and reusable: capture the concept, why it matters, and the smallest helpful example. Do not turn the guide into a record of a specific conversation, branch, commit, or session unless that detail is essential to the concept.
+
 If a topic already exists, improve that topic file instead of creating a duplicate. If a topic has only been mentioned but not worked through, keep it short in `study-guide/deferred-topics.md`.
 
 Keep `LEARNINGS.md` focused on navigation and the current project snapshot. Do not use subagents to edit study-guide files unless the user explicitly approves the proposed note changes first.
