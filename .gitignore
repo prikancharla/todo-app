@@ -1,3 +1,30 @@
+# Python bytecode and interpreter caches
 __pycache__/
 *.py[cod]
+*$py.class
+
+# Local Python environments created by uv or Python
 .venv/
+venv/
+env/
+
+# Test, coverage, lint, and type-checking output
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Python build artifacts
+build/
+dist/
+*.egg-info/
+
+# Local configuration that may contain secrets
+.env
+.env.*
+!.env.example
+
+# Operating-system files
+.DS_Store
