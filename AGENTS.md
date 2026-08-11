@@ -16,6 +16,15 @@ Learning path:
 8. CI/CD.
 9. Maybe add an assistant service that can perform todo add/edit operations.
 
+## Teaching Style
+
+When the user is learning a new technology:
+
+- work in small, sequential steps;
+- explain the goal of each step before asking the user to make the change;
+- let the user write the code unless they explicitly ask for code or an implementation;
+- pause after each step to review their result before continuing.
+
 ## Learning Journal
 
 Maintain `LEARNINGS.md` and the `study-guide/` folder as a beginner-friendly study guide.
