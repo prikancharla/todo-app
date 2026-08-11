@@ -56,6 +56,7 @@ Current backend:
 - `backend/.dockerignore` keeps generated local files out of the Docker build context.
 - The backend has been deployed on Render and verified through API routes.
 - Data is stored in memory in one global `TodoList`, so data resets when the app restarts.
+- `README.md` provides clone, local-run, and Docker-run instructions for new contributors.
 
 Current API capabilities:
 
