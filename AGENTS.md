@@ -8,14 +8,13 @@ Learning path:
 
 1. Design Python OOP classes.
 2. Build a FastAPI backend.
-3. Integrate SQL Server persistence.
-4. Build a simple React frontend.
-5. Deploy the FastAPI backend.
-6. Deploy the frontend.
-7. Later: CI/CD.
-8. Later: add an assistant service that can perform todo add/edit operations.
-
-Current stage: the FastAPI backend exists and has been packaged with a Dockerfile. The next major step is choosing and using a backend deployment service.
+3. Deploy the FastAPI backend.
+4. Build a frontend to learn html, javascript and css.
+5. Deploy the frontend.
+6. Build a simple React frontend and replace the earlier frontend.
+7. Integrate SQL Server persistence.
+8. CI/CD.
+9. Maybe add an assistant service that can perform todo add/edit operations.
 
 ## Learning Journal
 
@@ -64,26 +63,3 @@ When documenting a command in the study guide, explain:
 - why important flags/options are used;
 - what result to expect;
 - whether generated files should be committed or ignored.
-
-When documenting a tool, explain how it relates to project files and runtime behavior. Important relationships for this project:
-
-- `uv`, `pyproject.toml`, `uv.lock`, `.venv/`, and `uv run`.
-- FastAPI `app`, route decorators, request bodies, response models, status codes, and `/docs`.
-- Pydantic request models, response models, defaults, validation, and model-to-dict conversion.
-- Dockerfile, build context, image, container, port mapping, `.dockerignore`, and generated files.
-- Git working tree, staging area, commits, branches, lockfiles, ignored files, and what to commit.
-
-## Topics To Capture Deeply
-
-Prioritize deeper beginner notes for concepts the user actively encounters:
-
-- Python classes, objects, constructors, `self`, attributes, methods, imports, and properties.
-- Type hints, runtime validation, optional values, defaults, positional arguments, and keyword arguments.
-- Lists and dictionaries when they affect design.
-- FastAPI routes, HTTP methods, path/query parameters, request bodies, serialization, and errors.
-- Pydantic schemas and validation.
-- Dependency management with `uv`.
-- Docker concepts as implemented in this project.
-- SQL Server and database persistence when implemented.
-- React/frontend concepts when implemented.
-- Deployment concepts when implemented.
