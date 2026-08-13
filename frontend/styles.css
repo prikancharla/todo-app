@@ -1,0 +1,42 @@
+@import url("https://fonts.googleapis.com/css2?family=Caveat:wght@500;600&family=Cormorant+Garamond:wght@500;600&display=swap");
+body {
+    color: #4A2C24;
+    background-color: #f2eee8;
+    font-family: "Cormorant Garamond", Cambria;
+    margin: 40px;
+}
+h1{
+color: #c97666;
+font-family: Caveat, cursive;
+font-size: 2.25rem;
+}
+h3{
+    margin: 0 0 4px;
+}
+p{
+    margin: 0 0 4px;
+}
+li {
+    padding: 10px 0;
+    border-bottom: 1px solid #C9907A;
+}
+li[data-is-complete="true"] {
+    color: #7A5448;
+}
+li[data-is-complete="true"] h3 {
+    text-decoration: line-through;
+}
+li:last-child {
+      border-bottom: none;
+  }
+ul{
+    list-style: none;
+    padding: 0;
+}
+section{
+    max-width: 640px;
+}
+.status {
+  color: #7A5448;
+  font-size: 0.875rem;
+}
