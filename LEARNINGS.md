@@ -48,6 +48,7 @@ todo-app/
     git-basics.md
     html-document-structure.md
     css-basics-and-selectors.md
+    javascript-fetching-and-rendering.md
     deferred-topics.md
 ```
 
@@ -61,7 +62,7 @@ Current backend:
 - The backend has been deployed on Render and verified through API routes.
 - Data is stored in memory in one global `TodoList`, so data resets when the app restarts.
 - `README.md` provides clone, local-run, and Docker-run instructions for new contributors.
-- `frontend/index.html` and `frontend/styles.css` form a static, styled mockup whose task markup matches the backend task shape.
+- `frontend/` contains a styled JavaScript task list that fetches and displays the backend's in-memory tasks.
 
 Current API capabilities:
 
@@ -76,7 +77,7 @@ PATCH  /tasks/{uid}/toggle
 Known limitations:
 
 - No database yet.
-- No interactive frontend yet: the static mockup has no JavaScript or backend connection.
+- The frontend can display tasks but cannot yet create, delete, or toggle them.
 - Docker packaging exists through `backend/Dockerfile` and `backend/.dockerignore`.
 - Backend deployment on Render works for the current in-memory API.
 - All users would currently share the same in-memory todo list.
@@ -95,6 +96,7 @@ Known limitations:
 - [Git Basics Used In This Project](study-guide/git-basics.md)
 - [HTML Document Structure](study-guide/html-document-structure.md)
 - [CSS Basics And Selectors](study-guide/css-basics-and-selectors.md)
+- [JavaScript: Fetching And Rendering Data](study-guide/javascript-fetching-and-rendering.md)
 - [Deferred Topics](study-guide/deferred-topics.md)
 
 ## Updating This Guide
