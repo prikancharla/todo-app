@@ -1,10 +1,16 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from todo import TodoList
 from pydantic import BaseModel
 from typing import List
 import uuid
 
 app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://127.0.0.1:5500"],
+    allow_methods=["GET"],
+)
 
 todolist = TodoList()
 todolist.create_task("buy milk")
